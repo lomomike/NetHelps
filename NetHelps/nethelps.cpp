@@ -48,3 +48,56 @@ EXT_COMMAND(DumpSyncBlk,
 
     syncBlock.PrintData(m_Control, syncBlockIndex);
 }
+
+EXT_COMMAND(DumpObjHeader,
+    "Dump Object Header",
+    "{;e,r;address;Object Address}")
+{
+    const CLRDATA_ADDRESS objectAddress = GetUnnamedArgU64(0);
+    ObjHeader objectHeader;
+
+    auto hr = m_Data->ReadVirtual(objectAddress - 8, &objectHeader, sizeof(ObjHeader), nullptr);
+    if (FAILED(hr))
+        return;
+
+    const auto headerValue = objectHeader.m_SyncBlockValue;
+    m_Control->Output(DEBUG_OUTPUT_NORMAL,
+        "ObjectHeader %08x. ", headerValue);
+
+    if (headerValue == 0)
+    {
+        m_Control->Output(DEBUG_OUTPUT_NORMAL, "Empty\n\n");
+        return;
+    }
+    m_Control->Output(DEBUG_OUTPUT_NORMAL, "\n");
+
+
+    if (headerValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+    {
+        if (headerValue & BIT_SBLK_IS_HASHCODE)
+        {
+            const auto hashCode = headerValue & MASK_HASHCODE;
+            m_Control->Output(DEBUG_OUTPUT_NORMAL, "Stores only HashCode %08x\n", hashCode);
+        }
+        else
+        {
+            const auto syncBlockIndex = headerValue & MASK_SYNCBLOCKINDEX;
+            m_Control->Output(DEBUG_OUTPUT_NORMAL, "Stores SyncBlock #%u\n\n", syncBlockIndex);
+
+        }
+    }
+    else
+    {
+        const auto lockThreadId = headerValue & SBLK_MASK_LOCK_THREADID;
+        const auto recursionLevel = (headerValue & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
+        const auto appDomainIndex = (headerValue & SBLK_MASK_APPDOMAININDEX) >> SBLK_APPDOMAIN_SHIFT;
+
+        m_Control->Output(DEBUG_OUTPUT_NORMAL,
+            "Stores Thinlock\n"
+            "\tThreadId %lu\n"
+            "\tRecursion level %lu\n"
+            "\tAppDomain index %lu\n",
+            lockThreadId, recursionLevel, appDomainIndex);
+    }
+
+}

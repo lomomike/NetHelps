@@ -2,3 +2,4 @@ EXPORTS
 	DebugExtensionInitialize
 	DebugExtensionUninitialize
 	DumpSyncBlk
+	DumpObjHeader

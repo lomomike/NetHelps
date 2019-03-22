@@ -46,9 +46,37 @@ struct DacpSyncBlockData : ZeroInit<DacpSyncBlockData>
 	}
 };
 
+struct ObjHeader
+{
+    // !!! Notice: m_SyncBlockValue *MUST* be the last field in ObjHeader.
+#ifdef _WIN64
+    DWORD    m_alignpad;
+#endif // _WIN64
+
+    DWORD m_SyncBlockValue;      // the Index and the Bits
+};
+
+#define HASHCODE_BITS                   26
+
+#define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
+#define BIT_SBLK_FINALIZER_RUN              0x40000000
+#define BIT_SBLK_SPIN_LOCK                  0x10000000
+#define SBLK_MASK_LOCK_THREADID             0x000003FF   // special value of 0 + 1023 thread ids
+#define SBLK_MASK_LOCK_RECLEVEL             0x0000FC00   // 64 recursion levels
+#define SBLK_APPDOMAIN_SHIFT                16           // shift right this much to get appdomain index
+#define SBLK_MASK_APPDOMAININDEX            0x000007FF   // 2048 appdomain indices
+#define SBLK_RECLEVEL_SHIFT                 10           // shift right this much to get recursion level
+#define BIT_SBLK_IS_HASHCODE            0x04000000
+#define MASK_HASHCODE                   ((1<<HASHCODE_BITS)-1)
+#define SYNCBLOCKINDEX_BITS             26
+#define MASK_SYNCBLOCKINDEX             ((1<<SYNCBLOCKINDEX_BITS)-1)
+
+
+
 class EXT_CLASS : public ExtExtension
 {
 public:
 	EXT_COMMAND_METHOD(DumpSyncBlk);
+    EXT_COMMAND_METHOD(DumpObjHeader);
 };
 
